@@ -19,6 +19,17 @@
 ;;; The states part
 ;;; =====================
 
+(def init-global-state
+  {:ball-state {:pos [0 0 -5]
+                :delta [0.04 0 0]}
+   :pad1-state {:pos [3 0 -5]
+                :delta [0 0.08 0]}
+   :pad2-state {:pos [-3 0 -5]
+                :delta [0 0.08 0]}
+   :pad1-action nil
+   :pad2-action nil
+   :counter 0})
+
 (def init-pad1-state
   {:pos [3 0 -5]
    :delta [0 0.08 0]})
@@ -46,8 +57,8 @@
 ;; state of the ball
 (react/register-state ::ball-state init-ball-state)
 
-;; a counter in order to know when we need to increase the speed of the ball
-(react/register-state ::counter 0)
+;; global state
+(react/register-state ::global-state init-global-state)
 
 ;;; =====================
 ;;; Subscription(s)
@@ -56,7 +67,12 @@
 (react/register-subscription
  ::pad1-changed
  (fn [db]
+   ;;(react/update-state ::global-state (fn [old]
+                                        ;;(let [c (get-in old [:counter])]
+                                          ;;(assoc-in old [:counter] (inc c)))))
+   ;;(print (get (react/read-state ::global-state) :counter))
    (::pad1-state  db)))
+
 
 (react/register-subscription
  ::pad2-changed
@@ -67,6 +83,11 @@
  ::ball-changed
  (fn [db]
    (::ball-state  db)))
+
+(react/register-subscription
+ ::global-changed
+ (fn [db]
+   (::global-state db)))
 
 ;;; ==============
 ;;; Event handlers
@@ -83,12 +104,13 @@
 (react/register-event
  :react/frame-update
  (fn [_]
-   (let [pad1-action (react/read-state ::pad1-action)
-         pad2-action (react/read-state ::pad2-action)
-         counter (react/read-state ::counter)]
+   (let [pad1-action (react/read-state ::pad1-action) ;;(get (react/read-state ::global-state) :pad1-action)
+         pad2-action (react/read-state ::pad2-action)]
      (do
-       (react/update-state ::counter inc)
-       (if (zero? (mod (react/read-state ::counter) nb-ticks))
+       (react/update-state ::global-state (fn [old]
+                                            (let [c (get-in old [:counter])]
+                                              (assoc-in old [:counter] (inc c)))))
+       (if (zero? (mod (get (react/read-state ::global-state) :counter) nb-ticks))
          (react/update-state ::ball-state (fn [old]
                                             (let [x (get-in old [:delta 0])]
                                               (if (neg? x)
@@ -144,7 +166,10 @@
 (react/register-event
  ::move-pad1
  (fn [direction]
-   (react/update-state ::pad1-state #(move-pad direction %))))
+   (react/update-state ::global-state (fn [old] 
+                                        (let [pad1 (get-in old [:pad1-state])]
+                                          (assoc-in old [:pad1-state] (move-pad direction pad1)))) )))
+    ;;::pad1-state #(move-pad direction %))))
 
 ;;{
 ;; Event to move the right pad, the handler takes a direction in order
@@ -184,7 +209,7 @@
 (react/register-event
  ::score
  (fn [scorer]
-   (react/update-state ::counter (fn [_] 0))
+   (react/update-state ::global-state (fn [old] (assoc-in old [:counter] 0)))
    (react/update-state ::ball-state (fn [_]
                                       (case scorer
                                         :left-pad init-ball-state
