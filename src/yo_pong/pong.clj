@@ -26,8 +26,8 @@
                 :delta [0 0.08 0]}
    :pad2-state {:pos [-3 0 -5]
                 :delta [0 0.08 0]}
-   :pad1-action nil
-   :pad2-action nil
+   :pad1-action :nil
+   :pad2-action :nil
    :counter 0})
 
 (def init-pad1-state
@@ -45,14 +45,8 @@
 ;; state of the left pad
 (react/register-state ::pad1-state init-pad1-state)
 
-;; state containing the movement of the left pad
-(react/register-state ::pad1-action :nil)
-
 ;; state of the right pad
 (react/register-state ::pad2-state init-pad2-state)
-
-;; state containing the movement of the right pad
-(react/register-state ::pad2-action :nil)
 
 ;; state of the ball
 (react/register-state ::ball-state init-ball-state)
@@ -67,10 +61,10 @@
 (react/register-subscription
  ::pad1-changed
  (fn [db]
-   ;;(react/update-state ::global-state (fn [old]
-                                        ;;(let [c (get-in old [:counter])]
-                                          ;;(assoc-in old [:counter] (inc c)))))
-   ;;(print (get (react/read-state ::global-state) :counter))
+   ;(react/update-state ::global-state (fn [old]
+                                        ;(let [c (get-in old [:pad1-action])]
+                                         ; (assoc-in old [:pad1-action] :up))))
+   ;(print (get (react/read-state ::global-state) :pad1-action))
    (::pad1-state  db)))
 
 
@@ -104,8 +98,8 @@
 (react/register-event
  :react/frame-update
  (fn [_]
-   (let [pad1-action (react/read-state ::pad1-action) ;;(get (react/read-state ::global-state) :pad1-action)
-         pad2-action (react/read-state ::pad2-action)]
+   (let [pad1-action (get (react/read-state ::global-state) :pad1-action)
+         pad2-action (get (react/read-state ::global-state) :pad2-action)]
      (do
        (react/update-state ::global-state (fn [old]
                                             (let [c (get-in old [:counter])]
@@ -141,23 +135,23 @@
    ;; Pad 1 action (right side)
    (cond
      ;; if we want to move up and down at the same time
-     (and (:up (:keysdown kbd-state)) (:down (:keysdown kbd-state))) (react/update-state ::pad1-action (fn [_] :nil))
+     (and (:up (:keysdown kbd-state)) (:down (:keysdown kbd-state))) (react/update-state ::global-state (fn [old] (assoc-in old [:pad1-action] :nil)))
      ;; up-arrow
-     (:up (:keysdown kbd-state)) (react/update-state ::pad1-action (fn [_] :up))
+     (:up (:keysdown kbd-state)) (react/update-state ::global-state (fn [old] (assoc-in old [:pad1-action] :up)))
      ;; down-arrow
-     (:down (:keysdown kbd-state)) (react/update-state ::pad1-action (fn [_] :down))
+     (:down (:keysdown kbd-state)) (react/update-state ::global-state (fn [old] (assoc-in old [:pad1-action] :down)))
      ;; no moves
-     :else (react/update-state ::pad1-action (fn [_] :nil)))
+     :else (react/update-state ::global-state (fn [old] (assoc-in old [:pad1-action] :nil))))
    ;;Pad 2 action (left side)
    (cond
      ;; if we want to move up and down at the same time
-     (and (:e (:keysdown kbd-state)) (:d (:keysdown kbd-state))) (react/update-state ::pad2-action (fn [_] :nil))
+     (and (:e (:keysdown kbd-state)) (:d (:keysdown kbd-state))) (react/update-state ::global-state (fn [old] (assoc-in old [:pad2-action] :nil)))
      ;; E key
-     (:e (:keysdown kbd-state)) (react/update-state ::pad2-action (fn [_] :up))
+     (:e (:keysdown kbd-state)) (react/update-state ::global-state (fn [old] (assoc-in old [:pad2-action] :up)))
      ;; D key
-     (:d (:keysdown kbd-state)) (react/update-state ::pad2-action (fn [_] :down))
+     (:d (:keysdown kbd-state)) (react/update-state ::global-state (fn [old] (assoc-in old [:pad2-action] :down)))
      ;; no moves
-     :else (react/update-state ::pad2-action (fn [_] :nil)))))
+     :else (react/update-state ::global-state (fn [old] (assoc-in old [:pad2-action] :nil))))))
 
 ;;{
 ;; Event to move the left pad, the handler takes a direction in order
@@ -166,10 +160,9 @@
 (react/register-event
  ::move-pad1
  (fn [direction]
-   (react/update-state ::global-state (fn [old] 
-                                        (let [pad1 (get-in old [:pad1-state])]
-                                          (assoc-in old [:pad1-state] (move-pad direction pad1)))) )))
-    ;;::pad1-state #(move-pad direction %))))
+   (react/update-state 
+    ;;::global-state (fn [old] (let [pad1 (get-in old [:pad1-state])] (assoc-in old [:pad1-state] (move-pad direction pad1)))) )))
+    ::pad1-state #(move-pad direction %))))
 
 ;;{
 ;; Event to move the right pad, the handler takes a direction in order
