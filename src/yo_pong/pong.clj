@@ -22,8 +22,8 @@
 (def init-global-state
   {:ball-state {:pos [0 0 -5]
                 :delta [0.04 0 0]}
-   :pad1-state {:pos [3 0 -5]
-                :delta [0 0.08 0]}
+   :pad1-state (atom {:pos [3 0 -5]
+                :delta [0 0.08 0]})
    :pad2-state {:pos [-3 0 -5]
                 :delta [0 0.08 0]}
    :pad1-action :nil
@@ -61,11 +61,10 @@
 (react/register-subscription
  ::pad1-changed
  (fn [db]
-   ;(react/update-state ::global-state (fn [old]
-                                        ;(let [c (get-in old [:pad1-action])]
-                                         ; (assoc-in old [:pad1-action] :up))))
-   ;(print (get (react/read-state ::global-state) :pad1-action))
+   ;;(react/update-state ::global-state (fn [old] (let [pad1 (get-in old [:pad1-state])]))
+   (print (get (react/read-state ::global-state) :pad1-state))
    (::pad1-state  db)))
+   ;;(get (react/read-state ::global-state) :pad1-action)))
 
 
 (react/register-subscription
@@ -161,7 +160,6 @@
  ::move-pad1
  (fn [direction]
    (react/update-state 
-    ;;::global-state (fn [old] (let [pad1 (get-in old [:pad1-state])] (assoc-in old [:pad1-state] (move-pad direction pad1)))) )))
     ::pad1-state #(move-pad direction %))))
 
 ;;{
@@ -180,9 +178,8 @@
  ::move-ball
  (fn []
    (react/update-state ::ball-state
-                       (fn [{pos :pos
-                             delta :delta}]
-                         {:pos (mapv + pos delta) :delta delta}))))
+                       (fn [ball-state]
+                         (update-ball-state ball-state)))))
 
 ;;{
 ;; Event called when the ball collides with something
@@ -193,8 +190,8 @@
 ;;}
 (react/register-event
  ::ball-collision
- (fn [obj side part]
-   (react/update-state ::ball-state #(modif-ball obj side part %))))
+ (fn [side part]
+   (react/update-state ::ball-state #(modif-ball side part %))))
 
 ;;{
 ;; Event called when the ball need to be reinitialize after one side scored
@@ -221,13 +218,8 @@
     {:pos (mapv op pos delta)
      :delta delta}))
 
-(defn modif-ball [obj side part {pos :pos delta :delta}]
-  (case obj
-    :wall (let [y (case side
-                    :top (- (Math/abs (get delta 1)))
-                    :bottom (Math/abs (get delta 1)))]
-            {:pos pos :delta (assoc delta 1 y)})
-    :pad (let [x (case side
+(defn modif-ball [side part {pos :pos delta :delta}]
+  (let [x (case side
                    :right (- (Math/abs (get delta 0)))
                    :left (Math/abs (get delta 0)))
                y (case part
@@ -235,7 +227,46 @@
                    :middle (get delta 1)
                    :bottom (Math/max (- MAX-Y) (- (get delta 1) A)))
                z (get delta 2)]
-           {:pos pos :delta [x y z]})))
+           {:pos pos :delta [x y z]}))
+
+
+;;================
+;; Wall Limit 
+;;================
+(defn inter? [s1 s2]
+  (if (not-empty (set/intersection s1 s2))
+    true
+    false))
+
+(defn limit-set [comp coord limit key]
+  (if (comp coord limit)
+    #{key}
+    #{}))
+
+(defn bounds-checker [min-x max-x min-y max-y]
+  (fn [[x y z]]
+    (set/union (limit-set < x min-x :score-right)
+               (limit-set > x max-x :score-left)
+               (limit-set < y min-y :underflow-wall)
+               (limit-set > y max-y :overflow-wall)
+               (limit-set not= z -5 :error))))
+
+(def pos-check (bounds-checker (* 100 (- MAX-X)) (* 100 MAX-X) (+ 1.4 (* 100 (- MAX-Y))) (- (* 100 MAX-Y) 1.4)))
+
+(defn update-delta [checks [dx dy dz]]
+  (if (empty? checks)
+    [dx dy dz]
+    (if (inter? #{:underflow-wall :overflow-wall} checks)
+      [dx (- dy) dz]
+      [dx dy dz])))
+
+(defn update-ball-state [{pos :pos
+                         delta :delta}]
+  (let  [checks (pos-check pos)
+         delta' (update-delta checks delta)]
+    {:pos (mapv + pos delta')
+     :delta delta'}))
+
 
 ;;; =====================
 ;;; The view part
@@ -296,14 +327,12 @@
    [:hitbox :test/ball-hitbox {:pos [0 0 0]
                                :scale 0.4
                                :length [1 1 1]}
-    [:test/pad-group-1 :test/pad-hitbox-top-1 #(react/dispatch [::ball-collision :pad :right :top])]
-    [:test/pad-group-1 :test/pad-hitbox-middle-1 #(react/dispatch [::ball-collision :pad :right :middle])]
-    [:test/pad-group-1 :test/pad-hitbox-bottom-1 #(react/dispatch [::ball-collision :pad :right :bottom])]
-    [:test/pad-group-2 :test/pad-hitbox-top-2 #(react/dispatch [::ball-collision :pad :left :top])]
-    [:test/pad-group-2 :test/pad-hitbox-middle-2 #(react/dispatch [::ball-collision :pad :left :middle])]
-    [:test/pad-group-2 :test/pad-hitbox-bottom-2 #(react/dispatch [::ball-collision :pad :left :bottom])]
-    [:test/wall-group-1 :test/wall-hitbox-1 #(react/dispatch [::ball-collision :wall :top nil])]
-    [:test/wall-group-2 :test/wall-hitbox-2 #(react/dispatch [::ball-collision :wall :bottom nil])]
+    [:test/pad-group-1 :test/pad-hitbox-top-1 #(react/dispatch [::ball-collision :right :top])]
+    [:test/pad-group-1 :test/pad-hitbox-middle-1 #(react/dispatch [::ball-collision :right :middle])]
+    [:test/pad-group-1 :test/pad-hitbox-bottom-1 #(react/dispatch [::ball-collision :right :bottom])]
+    [:test/pad-group-2 :test/pad-hitbox-top-2 #(react/dispatch [::ball-collision :left :top])]
+    [:test/pad-group-2 :test/pad-hitbox-middle-2 #(react/dispatch [::ball-collision :left :middle])]
+    [:test/pad-group-2 :test/pad-hitbox-bottom-2 #(react/dispatch [::ball-collision :left :bottom])]
     [:test/wall-group-3 :test/wall-hitbox-3 #(react/dispatch [::score :left-pad])]
     [:test/wall-group-4 :test/wall-hitbox-4 #(react/dispatch [::score :right-pad])]]])
 
@@ -328,8 +357,6 @@
    [:ambient {:color :white :i 0.7}]
    [:sun {:color :red :i 1 :dir [-1 0 0]}]
    [:light ::light {:color :yellow :pos [0.5 0 -4]}]
-   [the-wall {:pos [0 4.5 -5] :rot [0 0 90] :scale 2} 1]
-   [the-wall {:pos [0 -4.5 -5] :rot [0 0 90] :scale 2} 2]
    [the-wall {:pos [8 0 -5] :rot [0 0 0] :scale 2} 3]
    [the-wall {:pos [-8 0 -5] :rot [0 0 0] :scale 2} 4]
    (let [pad-state1 (react/subscribe ctrl [::pad1-changed])]
