@@ -56,7 +56,7 @@
 (react/register-event
  :react/frame-update
  (fn [_ _]
-   {:events [[::update-counter] [::move-ball]]}))
+   {:events [[::update-counter] [::move-ball] ]}))
 
 ;;{
 ;; Event to move the ball and reset counter if a player score
@@ -79,12 +79,80 @@
  (fn [env]
    (update env ::global-state (fn [global-state]
                                 (update-in global-state [:counter] inc)))))
-                                    
+
+(declare move-pad)
+(react/register-event
+ ::move-pad1 ::global-state
+ (fn [env]
+   (if (= :nil (:pad1-action env))
+     env
+     (let [direction (:pad1-action env)]
+       (update env ::global-state (fn [global-state]
+                                    (assoc global-state :pad1-state (move-pad direction (:pad1-state global-state)))))))))                            
 
 
-;;================
+(react/register-event
+ ::move-pad2 ::global-state
+ (fn [env]
+   (if (= :nil (:pad2-action env))
+     env
+     (let [direction (:pad2-action env)]
+       (update env ::global-state (fn [global-state]
+                                    (assoc global-state :pad2-state (move-pad direction (:pad2-state global-state)))))))))                            
+
+
+
+(react/register-event
+ :react/key-update
+ (fn [kbd-state]
+   ;; Pad 1 action (right side)
+   (cond
+     ;; if we want to move up and down at the same time
+     (and (:up (:keysdown kbd-state)) (:down (:keysdown kbd-state))) (react/update-state ::global-state (fn [old] (assoc-in old [:pad1-action] :nil)))
+     ;; up-arrow
+     (:up (:keysdown kbd-state)) (react/update-state ::global-state (fn [old] (assoc-in old [:pad1-action] :up)))
+     ;; down-arrow
+     (:down (:keysdown kbd-state)) (react/update-state ::global-state (fn [old] (assoc-in old [:pad1-action] :down)))
+     ;; no moves
+     :else (react/update-state ::global-state (fn [old] (assoc-in old [:pad1-action] :nil))))
+   ;;Pad 2 action (left side)
+   (cond
+     ;; if we want to move up and down at the same time
+     (and (:e (:keysdown kbd-state)) (:d (:keysdown kbd-state))) (react/update-state ::global-state (fn [old] (assoc-in old [:pad2-action] :nil)))
+     ;; E key
+     (:e (:keysdown kbd-state)) (react/update-state ::global-state (fn [old] (assoc-in old [:pad2-action] :up)))
+     ;; D key
+     (:d (:keysdown kbd-state)) (react/update-state ::global-state (fn [old] (assoc-in old [:pad2-action] :down)))
+     ;; no moves
+     :else (react/update-state ::global-state (fn [old] (assoc-in old [:pad2-action] :nil))))))
+
+
+
+;;===========
+;; Functions
+;;===========
+(defn move-pad [direction {pos :pos delta :delta}]
+  (let [op (case direction
+             :up +
+             :down -)]
+    {:pos (mapv op pos delta)
+     :delta delta}))
+
+(defn modif-ball [side part {pos :pos delta :delta}]
+  (let [x (case side
+            :right (- (Math/abs (get delta 0)))
+            :left (Math/abs (get delta 0)))
+        y (case part
+            :top (Math/min MAX-Y (+ (get delta 1) A))
+            :middle (get delta 1)
+            :bottom (Math/max (- MAX-Y) (- (get delta 1) A)))
+        z (get delta 2)]
+    {:pos pos :delta [x y z]}))
+
+
+;;============
 ;; Wall Limit 
-;;================
+;;============
 (defn inter? [s1 s2]
   (if (not-empty (set/intersection s1 s2))
     true
