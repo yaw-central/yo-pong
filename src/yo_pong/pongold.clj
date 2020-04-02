@@ -1,4 +1,4 @@
-(ns yo-pong.pong
+(ns yo-pong.pongold
   (:require [clojure.set :as set]
             [yaw.world :as world]
             [yaw-reactive.reaction :as react]
@@ -10,6 +10,10 @@
 (def MAX-X 0.15)
 (def MAX-Y 0.04)
 (def nb-ticks 200)
+
+(declare update-ball-state)
+(declare move-pad)
+(declare modif-ball)
 
 (defonce +myctrl+ (world/start-universe!))
 
@@ -33,6 +37,7 @@
 ;;; =====================
 ;;; Subscription(s)
 ;;; =====================
+
 (react/register-subscription
  +myctrl+ ::global-state ::pad1-changed
  (fn [global-state]
@@ -44,9 +49,10 @@
    (:pos (:pad2-state global-state))))
 
 (react/register-subscription
- +myctrl+ ::global-state ::ball-changed
+  +myctrl+ ::global-state ::ball-changed
  (fn [global-state]
-   (:pos (:ball-state global-state))))
+   (:pos (:ball-state global-state)))) 
+
 
 
 ;;; ==============
@@ -55,31 +61,51 @@
 
 (react/register-event
  :react/frame-update
- (fn [_ _]
-   {:events [[::update-counter] [::move-ball]]}))
+  (fn [_ _] 
+    {:events [[::inc-counter]]}))
+
 
 ;;{
-;; Event to move the ball and reset counter if a player score
+;; Event to move the ball
 ;;}
-(declare update-ball-state)
 (react/register-event
  ::move-ball ::global-state
- (fn [env]
+ (fn [env] 
    (update env ::global-state (fn [global-state]
-                                (let [state (assoc global-state :ball-state (update-ball-state (:ball-state global-state)))]
-                                  (if (= (:pos (:ball-state init-global-state)) (:pos (:ball-state state)))
-                                    (assoc state :counter 0)
-                                    state))))))
+                                (assoc global-state :ball-state (update-ball-state (:ball-state global-state)))))))
+   
 
-;;{
-;; Event to increment the counter 
-;;}
+;   (let [ball-state (:ball-state (react/read-state ::global-state))]
+ ;    (if (= (:pos (:ball-state init-global-state)) (:pos ball-state))
+ ;      (react/update-state ::global-state (fn [old] (assoc-in old [:counter] 0)))))))
+
 (react/register-event
- ::update-counter ::global-state
+ ::inc-counter ::global-state
  (fn [env]
    (update env ::global-state (fn [global-state]
                                 (update-in global-state [:counter] inc)))))
-                                    
+
+;;===========
+;; Functions
+;;===========
+
+(defn move-pad [direction {pos :pos delta :delta}]
+  (let [op (case direction
+             :up +
+             :down -)]
+    {:pos (mapv op pos delta)
+     :delta delta}))
+
+(defn modif-ball [side part {pos :pos delta :delta}]
+  (let [x (case side
+                   :right (- (Math/abs (get delta 0)))
+                   :left (Math/abs (get delta 0)))
+          y (case part
+              :top (Math/min MAX-Y (+ (get delta 1) A))
+              :middle (get delta 1)
+              :bottom (Math/max (- MAX-Y) (- (get delta 1) A)))
+            z (get delta 2)]
+       {:pos pos :delta [x y z]}))
 
 
 ;;================
@@ -109,19 +135,19 @@
 (defn update-ball-state [{pos :pos [dx dy dz] :delta}]
   (let [checks (pos-check pos)]
     (if (empty? checks)
-      {:pos (mapv + pos [dx dy dz])
+      {:pos (mapv + pos [dx dy dz]) 
        :delta [dx dy dz]}
       (if (inter? #{:underflow-wall :overflow-wall} checks)
-        (let [delta' [dx (- dy) dz]]
-          {:pos (mapv + pos delta')
-           :delta delta'})
-        (if (inter? #{:score-left :error} checks)
-          (:ball-state init-global-state)
-          (let [pos' (:pos (:ball-state init-global-state))
-                [dx' dy' dz'] (:delta (:ball-state init-global-state))
-                res {:pos pos' :delta [(- dx') dy' dz']}
-                _ (assoc init-global-state :ball-state res)]
-            res))))))
+       (let [delta' [dx (- dy) dz]]
+         {:pos (mapv + pos delta')
+          :delta delta'})
+       (if (inter? #{:score-left :error} checks)
+         (:ball-state init-global-state)
+         (let [pos' (:pos (:ball-state init-global-state))
+               [dx' dy' dz'] (:delta (:ball-state init-global-state))
+               res {:pos pos' :delta [(- dx') dy' dz']}
+               _ (assoc init-global-state :ball-state res)]
+           res))))))
 
 
 ;;; =====================
@@ -144,23 +170,48 @@
 (defn the-pad [id]
   (let [[group item htop hmid hbot] (pad-keywords id)]
     (fn [state]
-      [:item item
-       {:mesh :mesh/cuboid
-        :pos @state
-        :rot [0 0 0]
-        :mat :red
-        :scale 0.3}])))
+      [:group group
+       {:pos @state}
+       :rot [0 0 0]
+        :scale 1
+       [:item item
+        {:mesh :mesh/cuboid
+         :pos [0 0 0]
+         :rot [0 0 0]
+         :mat :red
+         :scale 0.3}]
+       [:hitbox htop
+        {:pos [0 0.6 0]
+         :scale 0.6
+         :length [1 1 1]}]
+       [:hitbox hmid
+        {:pos [0 0 0]
+         :scale 0.6
+         :length [1 1 1]}]
+       [:hitbox hbot
+        {:pos [0 -0.6 0]
+         :scale 0.6
+         :length [1 1 1]}]])))
 
 (def the-pad1 (the-pad 1))
 (def the-pad2 (the-pad 2))
 
 (defn the-ball
   [state]
-  [:item :test/box {:mesh :mesh/box
-                    :pos @state
-                    :rot [0 0 0]
-                    :mat :yellow
-                    :scale 0.2}])
+  [:group :test/ball {:pos @state}
+                     :rot [0 0 0]
+                      :scale 1
+   [:item :test/box {:mesh :mesh/box
+                     :pos [0 0 0]
+                     :rot [0 0 0]
+                     :mat :yellow
+                     :scale 0.2}]
+   [:hitbox :test/ball-hitbox {:pos [0 0 0]
+                               :scale 0.4
+                               :length [1 1 1]}
+    [:test/pad-group-1 :test/pad-hitbox-top-1 #(react/dispatch [::ball-collision :right :top])]
+    [:test/pad-group-1 :test/pad-hitbox-middle-1 #(react/dispatch [::ball-collision :right :middle])]
+    [:test/pad-group-1 :test/pad-hitbox-bottom-1 #(react/dispatch [::ball-collision :right :bottom])]]])
 
 
 (defn scene []
@@ -174,10 +225,11 @@
      [the-pad2 pad2-pos])
    (let [ball-pos (react/subscribe ::ball-changed)]
      [the-ball ball-pos])])
-
+   
 
 ;;; =====================
 ;;; The main part
 ;;; =====================
+
 (defn start-pong! []
   (react/activate! +myctrl+ [scene]))
