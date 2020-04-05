@@ -4,7 +4,7 @@
   :license {:name "MIT License"
             :url "http://opensource.org/licenses/MIT"}
   :dependencies [[org.clojure/clojure "1.10.1"]
-                 [yaw-reactive "0.3.0-SNAPSHOT"]]
+                 [yaw-reactive "0.5.0-SNAPSHOT"]]
   :main yo-pong.core
   :repl-options {:init-ns yo-pong.core}
   :profiles { :uberjar {:aot :all} })
