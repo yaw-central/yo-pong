@@ -102,31 +102,6 @@
 
 
 
-(react/register-event
- :react/key-update
- (fn [kbd-state]
-   ;; Pad 1 action (right side)
-   (cond
-     ;; if we want to move up and down at the same time
-     (and (:up (:keysdown kbd-state)) (:down (:keysdown kbd-state))) (react/update-state ::global-state (fn [old] (assoc-in old [:pad1-action] :nil)))
-     ;; up-arrow
-     (:up (:keysdown kbd-state)) (react/update-state ::global-state (fn [old] (assoc-in old [:pad1-action] :up)))
-     ;; down-arrow
-     (:down (:keysdown kbd-state)) (react/update-state ::global-state (fn [old] (assoc-in old [:pad1-action] :down)))
-     ;; no moves
-     :else (react/update-state ::global-state (fn [old] (assoc-in old [:pad1-action] :nil))))
-   ;;Pad 2 action (left side)
-   (cond
-     ;; if we want to move up and down at the same time
-     (and (:e (:keysdown kbd-state)) (:d (:keysdown kbd-state))) (react/update-state ::global-state (fn [old] (assoc-in old [:pad2-action] :nil)))
-     ;; E key
-     (:e (:keysdown kbd-state)) (react/update-state ::global-state (fn [old] (assoc-in old [:pad2-action] :up)))
-     ;; D key
-     (:d (:keysdown kbd-state)) (react/update-state ::global-state (fn [old] (assoc-in old [:pad2-action] :down)))
-     ;; no moves
-     :else (react/update-state ::global-state (fn [old] (assoc-in old [:pad2-action] :nil))))))
-
-
 
 ;;===========
 ;; Functions
@@ -212,23 +187,52 @@
 (defn the-pad [id]
   (let [[group item htop hmid hbot] (pad-keywords id)]
     (fn [state]
-      [:item item
-       {:mesh :mesh/cuboid
-        :pos @state
-        :rot [0 0 0]
-        :mat :red
-        :scale 0.3}])))
+      [:group group
+       {:pos @state}
+       :rot [0 0 0]
+       :scale 1
+       [:item item
+        {:mesh :mesh/cuboid
+         :pos [0 0 0]
+         :rot [0 0 0]
+         :mat :red
+         :scale 0.3}]
+       [:hitbox htop
+        {:pos [0 0.6 0]
+         :scale 0.6
+         :length [1 1 1]}]
+       [:hitbox hmid
+        {:pos [0 0 0]
+         :scale 0.6
+         :length [1 1 1]}]
+       [:hitbox hbot
+        {:pos [0 -0.6 0]
+         :scale 0.6
+         :length [1 1 1]}]])))
 
 (def the-pad1 (the-pad 1))
 (def the-pad2 (the-pad 2))
 
 (defn the-ball
   [state]
-  [:item :test/box {:mesh :mesh/box
-                    :pos @state
-                    :rot [0 0 0]
-                    :mat :yellow
-                    :scale 0.2}])
+  [:group :test/ball {:pos @state}
+                      :rot [0 0 0]
+                      :scale 1
+   [:item :test/box {:mesh :mesh/box
+                     :pos [0 0 0]
+                     :rot [0 0 0]
+                     :mat :yellow
+                     :scale 0.2}]
+   [:hitbox :test/ball-hitbox {:pos [0 0 0]
+                               :scale 0.4
+                               :length [1 1 1]}
+    [:test/pad-group-1 :test/pad-hitbox-top-1 #(react/dispatch [::ball-collision :right :top])]
+    [:test/pad-group-1 :test/pad-hitbox-middle-1 #(react/dispatch [::ball-collision :right :middle])]
+    [:test/pad-group-1 :test/pad-hitbox-bottom-1 #(react/dispatch [::ball-collision :right :bottom])]
+    [:test/pad-group-2 :test/pad-hitbox-top-2 #(react/dispatch [::ball-collision :left :top])]
+    [:test/pad-group-2 :test/pad-hitbox-middle-2 #(react/dispatch [::ball-collision :left :middle])]
+    [:test/pad-group-2 :test/pad-hitbox-bottom-2 #(react/dispatch [::ball-collision :left :bottom])]]])
+
 
 
 (defn scene []
@@ -236,10 +240,10 @@
    [:ambient {:color :white :i 0.7}]
    [:sun {:color :red :i 1 :dir [-1 0 0]}]
    [:light ::light {:color :yellow :pos [0.5 0 -4]}]
-   (let [pad1-pos (react/subscribe ::pad1-changed)]
-     [the-pad1 pad1-pos])
-   (let [pad2-pos (react/subscribe ::pad2-changed)]
-     [the-pad2 pad2-pos])
+   ;(let [pad1-pos (react/subscribe ::pad1-changed)]
+   ;  [the-pad1 pad1-pos])
+   ;(let [pad2-pos (react/subscribe ::pad2-changed)]
+   ;  [the-pad2 pad2-pos])
    (let [ball-pos (react/subscribe ::ball-changed)]
      [the-ball ball-pos])])
 
