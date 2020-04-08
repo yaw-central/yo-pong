@@ -13,6 +13,11 @@
 
 (defonce +myctrl+ (world/start-universe!))
 
+
+(declare update-ball-state)
+(declare move-pad)
+(declare modif-ball)
+
 ;;; =====================
 ;;; The states part
 ;;; =====================
@@ -56,12 +61,12 @@
 (react/register-event
  :react/frame-update
  (fn [_ _]
-   {:events [[::update-counter] [::move-ball] ]}))
+   {:events [[::update-counter] [::move-ball] [::move-pad1] [::move-pad2]]}))
+
 
 ;;{
 ;; Event to move the ball and reset counter if a player score
 ;;}
-(declare update-ball-state)
 (react/register-event
  ::move-ball ::global-state
  (fn [env]
@@ -80,13 +85,13 @@
    (update env ::global-state (fn [global-state]
                                 (update-in global-state [:counter] inc)))))
 
-(declare move-pad)
+
 (react/register-event
  ::move-pad1 ::global-state
  (fn [env]
-   (if (= :nil (:pad1-action env))
-     env
-     (let [direction (:pad1-action env)]
+   (let [direction (:pad1-action (::global-state env))]
+     (if (= :nil direction) 
+       env 
        (update env ::global-state (fn [global-state]
                                     (assoc global-state :pad1-state (move-pad direction (:pad1-state global-state)))))))))                            
 
@@ -94,24 +99,64 @@
 (react/register-event
  ::move-pad2 ::global-state
  (fn [env]
-   (if (= :nil (:pad2-action env))
-     env
-     (let [direction (:pad2-action env)]
+   (let [direction (:pad2-action (::global-state env))]
+     (if (= :nil direction)
+       env
        (update env ::global-state (fn [global-state]
                                     (assoc global-state :pad2-state (move-pad direction (:pad2-state global-state)))))))))                            
 
 
+;;{
+;; Event called when the ball collides with a pad
+;; The handler takes 3 arguments:
+;; * `side` : what side is the object
+;; * `part` : what part of the object (if it's precised)
+;;}
+(react/register-event
+ ::ball-collision ::global-state
+ (fn [env side part]
+   (update env ::global-state (fn [state]
+                                (assoc state :ball-state (modif-ball side part (:ball-state state)))))))
+   ;(assoc {} ::global-state 
+    ;      (react/update-state ::global-state (fn [state]
+     ;                                          (assoc-in state [:ball-state] (modif-ball side part (:ball-state state))))))))
 
+
+(defn key-check
+  [kbd-state [key1 key2]]
+  (if (seq (:keysdown kbd-state))
+    (let [up (key1 (:keysdown kbd-state))
+          down (key2 (:keysdown kbd-state))]
+      (cond
+        (and up down) :nil
+        up :up
+        down :down
+        :else :nil))
+    :nil))
+
+(react/register-event
+ :react/key-update ::global-state
+ (fn [env kbd-state]
+   (let [pad1 (key-check kbd-state [:up :down])
+         pad2 (key-check kbd-state [:e :d])]
+     (-> env
+         (update ::global-state (fn [state] (assoc state :pad1-action pad1 )))
+         (update ::global-state (fn [state] (assoc state :pad1-state (move-pad pad1 (:pad1-state state)))))
+         (update ::global-state (fn [state] (assoc state :pad2-action pad2 )))
+         (update ::global-state (fn [state] (assoc state :pad2-state (move-pad pad2 (:pad2-state state)))))
+         ))))
 
 ;;===========
 ;; Functions
 ;;===========
 (defn move-pad [direction {pos :pos delta :delta}]
-  (let [op (case direction
-             :up +
-             :down -)]
-    {:pos (mapv op pos delta)
-     :delta delta}))
+  (if (not (= direction :nil))
+    (let [op (case direction
+               :up +
+               :down -)]
+      {:pos (mapv op pos delta)
+       :delta delta})
+    {pos :pos delta :delta}))
 
 (defn modif-ball [side part {pos :pos delta :delta}]
   (let [x (case side
@@ -188,9 +233,9 @@
   (let [[group item htop hmid hbot] (pad-keywords id)]
     (fn [state]
       [:group group
-       {:pos @state}
+       {:pos @state
        :rot [0 0 0]
-       :scale 1
+       :scale 1}
        [:item item
         {:mesh :mesh/cuboid
          :pos [0 0 0]
@@ -215,9 +260,9 @@
 
 (defn the-ball
   [state]
-  [:group :test/ball {:pos @state}
+  [:group :test/ball {:pos @state
                       :rot [0 0 0]
-                      :scale 1
+                      :scale 1}
    [:item :test/box {:mesh :mesh/box
                      :pos [0 0 0]
                      :rot [0 0 0]
@@ -226,12 +271,12 @@
    [:hitbox :test/ball-hitbox {:pos [0 0 0]
                                :scale 0.4
                                :length [1 1 1]}
-    [:test/pad-group-1 :test/pad-hitbox-top-1 #(react/dispatch [::ball-collision :right :top])]
-    [:test/pad-group-1 :test/pad-hitbox-middle-1 #(react/dispatch [::ball-collision :right :middle])]
-    [:test/pad-group-1 :test/pad-hitbox-bottom-1 #(react/dispatch [::ball-collision :right :bottom])]
-    [:test/pad-group-2 :test/pad-hitbox-top-2 #(react/dispatch [::ball-collision :left :top])]
-    [:test/pad-group-2 :test/pad-hitbox-middle-2 #(react/dispatch [::ball-collision :left :middle])]
-    [:test/pad-group-2 :test/pad-hitbox-bottom-2 #(react/dispatch [::ball-collision :left :bottom])]]])
+    [:test/pad-group-1 :test/pad-hitbox-top-1 #(:events [[::ball-collision :right :top]]) ]
+    [:test/pad-group-1 :test/pad-hitbox-middle-1  #(:events [[::ball-collision :right :middle]]) ]
+    [:test/pad-group-1 :test/pad-hitbox-bottom-1 #(:events [[::ball-collision :right :bottom]])]
+    [:test/pad-group-2 :test/pad-hitbox-top-2 #(:events [[::ball-collision :left :top]])]
+    [:test/pad-group-2 :test/pad-hitbox-middle-2 #(:events [[::ball-collision :left :middle]])]
+    [:test/pad-group-2 :test/pad-hitbox-bottom-2 #(:events [[::ball-collision :left :bottom]])]]])
 
 
 
@@ -240,10 +285,10 @@
    [:ambient {:color :white :i 0.7}]
    [:sun {:color :red :i 1 :dir [-1 0 0]}]
    [:light ::light {:color :yellow :pos [0.5 0 -4]}]
-   ;(let [pad1-pos (react/subscribe ::pad1-changed)]
-   ;  [the-pad1 pad1-pos])
-   ;(let [pad2-pos (react/subscribe ::pad2-changed)]
-   ;  [the-pad2 pad2-pos])
+   (let [pad1-pos (react/subscribe ::pad1-changed)]
+     [the-pad1 pad1-pos])
+   (let [pad2-pos (react/subscribe ::pad2-changed)]
+     [the-pad2 pad2-pos])
    (let [ball-pos (react/subscribe ::ball-changed)]
      [the-ball ball-pos])])
 
