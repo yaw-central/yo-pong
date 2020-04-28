@@ -125,8 +125,8 @@
 (defn key-check
   [kbd-state [key1 key2]]
   (if (seq (:keysdown kbd-state))
-    (let [up (key1 (:keysdown kbd-state))
-          down (key2 (:keysdown kbd-state))]
+    (let [up (if (key1 (:keysdown kbd-state)) true false)
+          down (if (key2 (:keysdown kbd-state)) true false)]
       (cond
         (and up down) :nil
         up :up
@@ -141,9 +141,9 @@
          pad2 (key-check kbd-state [:e :d])]
      (-> env
          (update ::global-state (fn [state] (assoc state :pad1-action pad1 )))
-         (update ::global-state (fn [state] (assoc state :pad1-state (move-pad pad1 (:pad1-state state)))))
+         ;(update ::global-state (fn [state] (assoc state :pad1-state (move-pad pad1 (:pad1-state state)))))
          (update ::global-state (fn [state] (assoc state :pad2-action pad2 )))
-         (update ::global-state (fn [state] (assoc state :pad2-state (move-pad pad2 (:pad2-state state)))))
+         ;(update ::global-state (fn [state] (assoc state :pad2-state (move-pad pad2 (:pad2-state state)))))
          ))))
 
 ;;===========
@@ -271,12 +271,12 @@
    [:hitbox :test/ball-hitbox {:pos [0 0 0]
                                :scale 0.4
                                :length [1 1 1]}
-    [:test/pad-group-1 :test/pad-hitbox-top-1 #(:events [[::ball-collision :right :top]]) ]
-    [:test/pad-group-1 :test/pad-hitbox-middle-1  #(:events [[::ball-collision :right :middle]]) ]
-    [:test/pad-group-1 :test/pad-hitbox-bottom-1 #(:events [[::ball-collision :right :bottom]])]
-    [:test/pad-group-2 :test/pad-hitbox-top-2 #(:events [[::ball-collision :left :top]])]
-    [:test/pad-group-2 :test/pad-hitbox-middle-2 #(:events [[::ball-collision :left :middle]])]
-    [:test/pad-group-2 :test/pad-hitbox-bottom-2 #(:events [[::ball-collision :left :bottom]])]]])
+    [:test/pad-group-1 :test/pad-hitbox-top-1 #(react/dispatch [::ball-collision :right :top])]
+    [:test/pad-group-1 :test/pad-hitbox-middle-1 #(react/dispatch [::ball-collision :right :middle])]
+    [:test/pad-group-1 :test/pad-hitbox-bottom-1 #(react/dispatch [::ball-collision :right :bottom])]
+    [:test/pad-group-2 :test/pad-hitbox-top-2 #(react/dispatch [::ball-collision :left :top])]
+    [:test/pad-group-2 :test/pad-hitbox-middle-2 #(react/dispatch [::ball-collision :left :middle])]
+    [:test/pad-group-2 :test/pad-hitbox-bottom-2 #(react/dispatch [::ball-collision :left :bottom])]]])
 
 
 
