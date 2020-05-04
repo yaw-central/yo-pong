@@ -61,11 +61,13 @@
 (react/register-event
  :react/frame-update
  (fn [_ _]
-   {:events [ [::move-ball] [::update-counter] [::move-pad1] [::move-pad2]]}))  
+   {:events [[::update-counter] [::move-ball] [::move-pad1] [::move-pad2] ]}))  
 
 
 ;;{
 ;; Event to move the ball and reset counter if a player score
+;; * `env`  : the current global state
+;; return the new global state
 ;;}
 (react/register-event
  ::move-ball ::global-state
@@ -78,6 +80,8 @@
 
 ;;{
 ;; Event to increment the counter 
+;; * `env`  : the current global state
+;; return the new global state
 ;;}
 (react/register-event
  ::update-counter ::global-state
@@ -85,7 +89,11 @@
    (update env ::global-state (fn [global-state]
                                 (update-in global-state [:counter] inc)))))
 
-
+;;{
+;; Event to move the pad1 according to the pad1-action
+;; * `env`  : the current global state
+;; return the new global state
+;;}
 (react/register-event
  ::move-pad1 ::global-state
  (fn [env]
@@ -96,6 +104,11 @@
                                     (assoc global-state :pad1-state (move-pad direction (:pad1-state global-state)))))))))                            
 
 
+;;{
+;; Event to move the pad2 according to the pad2-action
+;; * `env`  : the current global state
+;; return the new global state
+;;}
 (react/register-event
  ::move-pad2 ::global-state
  (fn [env]
@@ -110,8 +123,9 @@
 ;; Event called when the ball collides with a pad
 ;; The handler takes 3 arguments:
 ;; * `env`  : the current global state
-;; * `side` : what side is the object
-;; * `part` : what part of the object (if it's precised)
+;; * `side` : what side of the object (:left or :right)
+;; * `part` : what part of the object (if it's precised: :top, :middle, :bottom)
+;; return the new global state
 ;;}
 (react/register-event
  ::ball-collision ::global-state
@@ -120,7 +134,11 @@
                                 (assoc state :ball-state (modif-ball side part (:ball-state state)))))))
 
 
-
+;;{
+;; Function that check in the keyboard-state 
+;; the state of key1 and key2 of the pad in 
+;; order to return the potential new direction 
+;;}
 (defn key-check
   [kbd-state [key1 key2]]
   (if (seq (:keysdown kbd-state))
@@ -133,6 +151,13 @@
         :else :nil))
     :nil))
 
+;;{
+;; Event when the keyboard had a update
+;; * `env`  : the current global state
+;; * `kbd-state` : the state of the keyboard
+;; return the new global state with update
+;; of pad-actions 
+;;}
 (react/register-event
  :react/key-update ::global-state
  (fn [env kbd-state]
@@ -142,11 +167,16 @@
          (update ::global-state (fn [state] (assoc state :pad1-action pad1 )))
          (update ::global-state (fn [state] (assoc state :pad2-action pad2 )))))))
 
-         ;;(update ::glocal-state (fn [state] (assoc state :pad1-state (move-pad pad1 (:pad1-state state)))))
 
 ;;===========
 ;; Functions
 ;;===========
+;;{
+;;Function that modify the position of the pad
+;;* `direction` of the movement (:up or :down)
+;;* {:pos :delta} the pad-state
+;;return the new pad-state if there is a update
+;;}
 (defn move-pad [direction {pos :pos delta :delta}]
   (if (not (= direction :nil))
     (let [op (case direction
@@ -156,6 +186,14 @@
        :delta delta})
     {pos :pos delta :delta}))
 
+;;{
+;;Function that modify the speed of the ball in 
+;;collision event
+;;* `side` of the collision (:right, :left)
+;;* `part of the object ( :top, :middle, :bottom)
+;;* {:pos :delta} the ball-state
+;;return the new  ball-state if there is a update
+;;}
 (defn modif-ball [side part {pos :pos delta :delta}]
   (let [x (case side
             :right (- (Math/abs (get delta 0)))
@@ -191,7 +229,10 @@
 
 (def pos-check (bounds-checker (- 8) 8 (+ 1.4 (* 100 (- MAX-Y))) (- (* 100 MAX-Y) 1.4)))
 
-
+;;{
+;;Function that update the ball-state
+;;(movement in general)
+;;}
 (defn update-ball-state [{pos :pos [dx dy dz] :delta}]
   (let [checks (pos-check pos)]
     (if (empty? checks)
