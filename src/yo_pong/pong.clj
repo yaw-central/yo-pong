@@ -61,7 +61,7 @@
 (react/register-event
  :react/frame-update
  (fn [_ _]
-   {:events [[::update-counter] [::move-ball] [::move-pad1] [::move-pad2]]}))
+   {:events [ [::move-ball] [::update-counter] [::move-pad1] [::move-pad2]]}))  
 
 
 ;;{
@@ -109,6 +109,7 @@
 ;;{
 ;; Event called when the ball collides with a pad
 ;; The handler takes 3 arguments:
+;; * `env`  : the current global state
 ;; * `side` : what side is the object
 ;; * `part` : what part of the object (if it's precised)
 ;;}
@@ -117,9 +118,7 @@
  (fn [env side part]
    (update env ::global-state (fn [state]
                                 (assoc state :ball-state (modif-ball side part (:ball-state state)))))))
-   ;(assoc {} ::global-state 
-    ;      (react/update-state ::global-state (fn [state]
-     ;                                          (assoc-in state [:ball-state] (modif-ball side part (:ball-state state))))))))
+
 
 
 (defn key-check
@@ -141,10 +140,9 @@
          pad2 (key-check kbd-state [:e :d])]
      (-> env
          (update ::global-state (fn [state] (assoc state :pad1-action pad1 )))
-         ;(update ::global-state (fn [state] (assoc state :pad1-state (move-pad pad1 (:pad1-state state)))))
-         (update ::global-state (fn [state] (assoc state :pad2-action pad2 )))
-         ;(update ::global-state (fn [state] (assoc state :pad2-state (move-pad pad2 (:pad2-state state)))))
-         ))))
+         (update ::global-state (fn [state] (assoc state :pad2-action pad2 )))))))
+
+         ;;(update ::glocal-state (fn [state] (assoc state :pad1-state (move-pad pad1 (:pad1-state state)))))
 
 ;;===========
 ;; Functions
