@@ -17,6 +17,7 @@
 (declare update-ball-state)
 (declare move-pad)
 (declare modif-ball)
+(declare update-pad-state)
 
 ;;; =====================
 ;;; The states part
@@ -24,7 +25,9 @@
 
 (def init-global-state
   {:ball-state {:pos [0 0 -5]
-                :delta [0.04 0 0]}
+                :delta [0.04 0 0]
+                :rot [10 10 0]
+                }
    :pad1-state {:pos [3 0 -5]
                 :delta [0 0.08 0]}
    :pad2-state {:pos [-3 0 -5]
@@ -52,6 +55,7 @@
  +myctrl+ ::global-state ::ball-changed
  (fn [global-state]
    (:pos (:ball-state global-state))))
+   ;;mettre le ball state entier pour avoir la rot
 
 
 ;;; ==============
@@ -182,9 +186,8 @@
     (let [op (case direction
                :up +
                :down -)]
-      {:pos (mapv op pos delta)
-       :delta delta})
-    {pos :pos delta :delta}))
+      (update-pad-state {:pos (mapv op pos delta) :delta delta}))
+    {:pos pos :delta delta}))
 
 ;;{
 ;;Function that modify the speed of the ball in 
@@ -246,10 +249,25 @@
           (:ball-state init-global-state)
           (let [pos' (:pos (:ball-state init-global-state))
                 [dx' dy' dz'] (:delta (:ball-state init-global-state))
-                res {:pos pos' :delta [(- dx') dy' dz']}
+                res {:pos pos' :delta [(- dx') dy' dz'] :rot [(* 100 dx) (* 50 dx) 0]}
                 _ (assoc init-global-state :ball-state res)]
             res))))))
 
+;;{
+;;Function that update the pad-state
+;;and check the limitation of the
+;;position (up and down according
+;;to the norme of the game)
+;;}
+(defn update-pad-state
+  [{[x y z] :pos del :delta}]
+  (let [_ (do (print "pos : " x)
+              (print " " y)
+              (println " " z))]
+    (cond
+      (> y 1.8) {:pos [x 2 z] :delta del}
+      (< y (- 1.8)) {:pos [x (- 2) z] :delta del}
+      :else {:pos [x y z] :delta del})))
 
 ;;; =====================
 ;;; The view part
@@ -276,40 +294,58 @@
        :rot [0 0 0]
        :scale 1}
        [:item item
-        {:mesh :mesh/cuboid
+        (if (= id 1)
+        {:mesh {:filename "pongpad.obj"}
          :pos [0 0 0]
-         :rot [0 0 0]
+         :rot [0 0 90]
          :mat :red
-         :scale 0.3}]
+         :scale 0.2}
+         {:mesh {:filename "pongpad.obj"}
+          :pos [0 0 0]
+          :rot [0 0 -90]
+          :mat :red
+          :scale 0.2})]
        [:hitbox htop
-        {:pos [0 0.6 0]
-         :scale 0.6
-         :length [1 1 1]}]
+        {:pos [0 0.4 0]
+         :scale 0.4
+         :length [0.4 1 1]
+         :is-visible true}]
        [:hitbox hmid
         {:pos [0 0 0]
-         :scale 0.6
-         :length [1 1 1]}]
+         :scale 0.4
+         :length [0.4 1 1]
+         :is-visible true}]
        [:hitbox hbot
-        {:pos [0 -0.6 0]
-         :scale 0.6
-         :length [1 1 1]}]])))
+        {:pos [0 -0.4 0]
+         :scale 0.4
+         :length [0.4 1 1]
+         :is-visible true}]])))
 
 (def the-pad1 (the-pad 1))
 (def the-pad2 (the-pad 2))
+
+(defn the-net
+    []
+        [:item :test/net {:mesh {:filename "net.obj"}
+            :pos [0 0 -6]
+            :rot [90 90 0]
+            :scale 1}]
+           )
 
 (defn the-ball
   [state]
   [:group :test/ball {:pos @state
                       :rot [0 0 0]
                       :scale 1}
-   [:item :test/box {:mesh :mesh/box
+   [:item :test/box {:mesh {:filename "ball.obj"}
                      :pos [0 0 0]
-                     :rot [0 0 0]
+                     :rot [10 10 0]
                      :mat :yellow
-                     :scale 0.2}]
+                     :scale 0.1}]
    [:hitbox :test/ball-hitbox {:pos [0 0 0]
-                               :scale 0.4
-                               :length [1 1 1]}
+                               :scale 0.1
+                               :length [1 1 1]
+                               :is-visible true}
     [:test/pad-group-1 :test/pad-hitbox-top-1 #(react/dispatch [::ball-collision :right :top])]
     [:test/pad-group-1 :test/pad-hitbox-middle-1 #(react/dispatch [::ball-collision :right :middle])]
     [:test/pad-group-1 :test/pad-hitbox-bottom-1 #(react/dispatch [::ball-collision :right :bottom])]
@@ -317,19 +353,18 @@
     [:test/pad-group-2 :test/pad-hitbox-middle-2 #(react/dispatch [::ball-collision :left :middle])]
     [:test/pad-group-2 :test/pad-hitbox-bottom-2 #(react/dispatch [::ball-collision :left :bottom])]]])
 
-
-
 (defn scene []
   [:scene
    [:ambient {:color :white :i 0.7}]
-   [:sun {:color :red :i 1 :dir [-1 0 0]}]
-   [:light ::light {:color :yellow :pos [0.5 0 -4]}]
+   [:sun {:color :white :i 1 :dir [-1 0 0]}]
+   [:light ::light {:color :white :pos [0.5 0 -4]}]
    (let [pad1-pos (react/subscribe ::pad1-changed)]
      [the-pad1 pad1-pos])
    (let [pad2-pos (react/subscribe ::pad2-changed)]
      [the-pad2 pad2-pos])
    (let [ball-pos (react/subscribe ::ball-changed)]
-     [the-ball ball-pos])])
+     [the-ball ball-pos])
+   [the-net]])
 
 
 ;;; =====================
