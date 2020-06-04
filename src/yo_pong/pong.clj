@@ -34,7 +34,9 @@
                 :delta [0 0.08 0]}
    :pad1-action :nil
    :pad2-action :nil
-   :counter 0})
+   :counter 0
+   :score-left 0
+   :score-right 0})
 
 (react/register-state ::global-state init-global-state)
 
@@ -77,9 +79,13 @@
  ::move-ball ::global-state
  (fn [env]
    (update env ::global-state (fn [global-state]
-                                (let [state (assoc global-state :ball-state (update-ball-state (:ball-state global-state)))]
-                                  (if (= (:pos (:ball-state init-global-state)) (:pos (:ball-state state)))
-                                    (assoc state :counter 0)
+                                (let [ [score, pos] (update-ball-state (:ball-state global-state))
+                                      state (assoc global-state :ball-state pos)]
+                                  (if (= (:pos (:ball-state init-global-state)) pos)
+                                    (cond
+                                      (= :left score) (assoc (assoc state :counter 0) :score-left (inc (:score-left state)))
+                                      (= :right score) (assoc (assoc state :counter 0) :score-right (inc (:score-right state)))
+                                      :else (assoc state :counter 0))
                                     state))))))
 
 ;;{
@@ -239,19 +245,13 @@
 (defn update-ball-state [{pos :pos [dx dy dz] :delta}]
   (let [checks (pos-check pos)]
     (if (empty? checks)
-      {:pos (mapv + pos [dx dy dz])
-       :delta [dx dy dz]}
+      [:nil, {:pos (mapv + pos [dx dy dz]) :delta [dx dy dz]}]
       (if (inter? #{:underflow-wall :overflow-wall} checks)
         (let [delta' [dx (- dy) dz]]
-          {:pos (mapv + pos delta')
-           :delta delta'})
+          [:nil {:pos (mapv + pos delta') :delta delta'}])
         (if (inter? #{:score-left :error} checks)
-          (:ball-state init-global-state)
-          (let [pos' (:pos (:ball-state init-global-state))
-                [dx' dy' dz'] (:delta (:ball-state init-global-state))
-                res {:pos pos' :delta [(- dx') dy' dz'] :rot [(* 100 dx) (* 50 dx) 0]}
-                _ (assoc init-global-state :ball-state res)]
-            res))))))
+          [:left, (:ball-state init-global-state)]
+          [:right, (:ball-state init-global-state)])))))
 
 ;;{
 ;;Function that update the pad-state
