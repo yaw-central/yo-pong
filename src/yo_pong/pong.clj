@@ -296,12 +296,12 @@
        [:item item
         (if (= id 1)
         {:mesh {:filename "pongpad.obj"}
-         :pos [0 0 0]
+         :pos [0.1 0 -0.1]
          :rot [0 0 90]
          :mat :red
          :scale 0.2}
          {:mesh {:filename "pongpad.obj"}
-          :pos [0 0 0]
+          :pos [-0.1 0 -0.1]
           :rot [0 0 -90]
           :mat :red
           :scale 0.2})]
@@ -309,17 +309,17 @@
         {:pos [0 0.4 0]
          :scale 0.4
          :length [0.4 1 1]
-         :is-visible true}]
+         :is-visible false}]
        [:hitbox hmid
         {:pos [0 0 0]
          :scale 0.4
          :length [0.4 1 1]
-         :is-visible true}]
+         :is-visible false}]
        [:hitbox hbot
         {:pos [0 -0.4 0]
          :scale 0.4
          :length [0.4 1 1]
-         :is-visible true}]])))
+         :is-visible false}]])))
 
 (def the-pad1 (the-pad 1))
 (def the-pad2 (the-pad 2))
@@ -329,6 +329,22 @@
         [:item :test/net {:mesh {:filename "net.obj"}
             :pos [0 0 -6]
             :rot [90 90 0]
+            :scale 1}]
+           )
+
+(defn the-pong
+    []
+        [:item :test/pong {:mesh {:filename "pong.obj"}
+            :pos [-4.5 2.5 -6]
+            :rot [90 0 0]
+            :scale 1.1}]
+           )
+
+(defn the-score
+    []
+        [:item :test/score {:mesh {:filename "score.obj"}
+            :pos [2 2.5 -6]
+            :rot [90 0 0]
             :scale 1}]
            )
 
@@ -345,7 +361,7 @@
    [:hitbox :test/ball-hitbox {:pos [0 0 0]
                                :scale 0.1
                                :length [1 1 1]
-                               :is-visible true}
+                               :is-visible false}
     [:test/pad-group-1 :test/pad-hitbox-top-1 #(react/dispatch [::ball-collision :right :top])]
     [:test/pad-group-1 :test/pad-hitbox-middle-1 #(react/dispatch [::ball-collision :right :middle])]
     [:test/pad-group-1 :test/pad-hitbox-bottom-1 #(react/dispatch [::ball-collision :right :bottom])]
@@ -364,7 +380,9 @@
      [the-pad2 pad2-pos])
    (let [ball-pos (react/subscribe ::ball-changed)]
      [the-ball ball-pos])
-   [the-net]])
+   [the-net]
+   [the-pong]
+   [the-score]])
 
 
 ;;; =====================
