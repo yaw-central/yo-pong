@@ -295,12 +295,12 @@
        :scale 1}
        [:item item
         (if (= id 1)
-        {:mesh {:filename "pongpad.obj"}
+        {:mesh {:filename "./resources/pongpad.obj"}
          :pos [0.1 0 -0.1]
          :rot [0 0 90]
          :mat :red
          :scale 0.2}
-         {:mesh {:filename "pongpad.obj"}
+         {:mesh {:filename "./resources/pongpad.obj"}
           :pos [-0.1 0 -0.1]
           :rot [0 0 -90]
           :mat :red
@@ -326,34 +326,37 @@
 
 (defn the-net
     []
-        [:item :test/net {:mesh {:filename "net.obj"}
+        [:item :test/net {:mesh {:filename "./resources/net.obj"}
             :pos [0 0 -6]
             :rot [90 90 0]
             :scale 1}]
            )
 
-(defn the-pong
-    []
-        [:item :test/pong {:mesh {:filename "pong.obj"}
-            :pos [-4.5 2.5 -6]
-            :rot [90 0 0]
-            :scale 1.1}]
-           )
-
 (defn the-score
     []
-        [:item :test/score {:mesh {:filename "score.obj"}
-            :pos [2 2.5 -6]
-            :rot [90 0 0]
-            :scale 1}]
-           )
+    [:group :test/scoredisplay
+        {:pos [0 0 0]
+          :rot [0 0 0]
+          :scale 1}
+        [:item :test/score      {:mesh {:filename "./resources/score.obj"}
+                                        :pos [-0.70 2 -5]
+                                        :rot [90 0 0]
+                                        :scale 0.6}]
+        [:item :test/scoreleft   {:mesh {:filename "./resources/n0.obj"}
+                                        :pos [-2.5 1.5 -5]
+                                        :rot [90 0 0]
+                                        :scale 1}]
+        [:item :test/scoreright     {:mesh {:filename "./resources/n0.obj"}
+                                        :pos [2.15 1.5 -5]
+                                        :rot [90 0 0]
+                                        :scale 1}]])
 
 (defn the-ball
   [state]
   [:group :test/ball {:pos @state
                       :rot [0 0 0]
                       :scale 1}
-   [:item :test/box {:mesh {:filename "ball.obj"}
+   [:item :test/box {:mesh {:filename "./resources/ball.obj"}
                      :pos [0 0 0]
                      :rot [10 10 0]
                      :mat :yellow
@@ -381,7 +384,6 @@
    (let [ball-pos (react/subscribe ::ball-changed)]
      [the-ball ball-pos])
    [the-net]
-   [the-pong]
    [the-score]])
 
 
