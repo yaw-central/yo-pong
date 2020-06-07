@@ -4,7 +4,7 @@ A Clojure library designed to ... well, that part is up to you.
 
 ## Usage
 
-FIXME
+For this project, in order to run this with "lein run", you have to install yaw-engine and yaw-reactive with the command "lein install".
 
 ## License
 
