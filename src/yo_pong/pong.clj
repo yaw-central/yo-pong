@@ -17,6 +17,7 @@
 (declare update-ball-state)
 (declare move-pad)
 (declare modif-ball)
+(declare update-pad-state)
 
 ;;; =====================
 ;;; The states part
@@ -24,14 +25,18 @@
 
 (def init-global-state
   {:ball-state {:pos [0 0 -5]
-                :delta [0.04 0 0]}
+                :delta [0.04 0 0]
+                :rot [10 10 0]
+                }
    :pad1-state {:pos [3 0 -5]
                 :delta [0 0.08 0]}
    :pad2-state {:pos [-3 0 -5]
                 :delta [0 0.08 0]}
    :pad1-action :nil
    :pad2-action :nil
-   :counter 0})
+   :counter 0
+   :score-left 0
+   :score-right 0})
 
 (react/register-state ::global-state init-global-state)
 
@@ -52,6 +57,7 @@
  +myctrl+ ::global-state ::ball-changed
  (fn [global-state]
    (:pos (:ball-state global-state))))
+   ;;mettre le ball state entier pour avoir la rot
 
 
 ;;; ==============
@@ -61,23 +67,31 @@
 (react/register-event
  :react/frame-update
  (fn [_ _]
-   {:events [[::update-counter] [::move-ball] [::move-pad1] [::move-pad2]]}))
+   {:events [[::update-counter] [::move-ball] [::move-pad1] [::move-pad2] ]}))  
 
 
 ;;{
 ;; Event to move the ball and reset counter if a player score
+;; * `env`  : the current global state
+;; return the new global state
 ;;}
 (react/register-event
  ::move-ball ::global-state
  (fn [env]
    (update env ::global-state (fn [global-state]
-                                (let [state (assoc global-state :ball-state (update-ball-state (:ball-state global-state)))]
-                                  (if (= (:pos (:ball-state init-global-state)) (:pos (:ball-state state)))
-                                    (assoc state :counter 0)
+                                (let [ [score, pos] (update-ball-state (:ball-state global-state))
+                                      state (assoc global-state :ball-state pos)]
+                                  (if (= (:pos (:ball-state init-global-state)) pos)
+                                    (cond
+                                      (= :left score) (assoc (assoc state :counter 0) :score-left (inc (:score-left state)))
+                                      (= :right score) (assoc (assoc state :counter 0) :score-right (inc (:score-right state)))
+                                      :else (assoc state :counter 0))
                                     state))))))
 
 ;;{
 ;; Event to increment the counter 
+;; * `env`  : the current global state
+;; return the new global state
 ;;}
 (react/register-event
  ::update-counter ::global-state
@@ -85,7 +99,11 @@
    (update env ::global-state (fn [global-state]
                                 (update-in global-state [:counter] inc)))))
 
-
+;;{
+;; Event to move the pad1 according to the pad1-action
+;; * `env`  : the current global state
+;; return the new global state
+;;}
 (react/register-event
  ::move-pad1 ::global-state
  (fn [env]
@@ -96,6 +114,11 @@
                                     (assoc global-state :pad1-state (move-pad direction (:pad1-state global-state)))))))))                            
 
 
+;;{
+;; Event to move the pad2 according to the pad2-action
+;; * `env`  : the current global state
+;; return the new global state
+;;}
 (react/register-event
  ::move-pad2 ::global-state
  (fn [env]
@@ -109,19 +132,23 @@
 ;;{
 ;; Event called when the ball collides with a pad
 ;; The handler takes 3 arguments:
-;; * `side` : what side is the object
-;; * `part` : what part of the object (if it's precised)
+;; * `env`  : the current global state
+;; * `side` : what side of the object (:left or :right)
+;; * `part` : what part of the object (if it's precised: :top, :middle, :bottom)
+;; return the new global state
 ;;}
 (react/register-event
  ::ball-collision ::global-state
  (fn [env side part]
    (update env ::global-state (fn [state]
                                 (assoc state :ball-state (modif-ball side part (:ball-state state)))))))
-   ;(assoc {} ::global-state 
-    ;      (react/update-state ::global-state (fn [state]
-     ;                                          (assoc-in state [:ball-state] (modif-ball side part (:ball-state state))))))))
 
 
+;;{
+;; Function that check in the keyboard-state 
+;; the state of key1 and key2 of the pad in 
+;; order to return the potential new direction 
+;;}
 (defn key-check
   [kbd-state [key1 key2]]
   (if (seq (:keysdown kbd-state))
@@ -134,6 +161,13 @@
         :else :nil))
     :nil))
 
+;;{
+;; Event when the keyboard had a update
+;; * `env`  : the current global state
+;; * `kbd-state` : the state of the keyboard
+;; return the new global state with update
+;; of pad-actions 
+;;}
 (react/register-event
  :react/key-update ::global-state
  (fn [env kbd-state]
@@ -141,23 +175,34 @@
          pad2 (key-check kbd-state [:e :d])]
      (-> env
          (update ::global-state (fn [state] (assoc state :pad1-action pad1 )))
-         ;(update ::global-state (fn [state] (assoc state :pad1-state (move-pad pad1 (:pad1-state state)))))
-         (update ::global-state (fn [state] (assoc state :pad2-action pad2 )))
-         ;(update ::global-state (fn [state] (assoc state :pad2-state (move-pad pad2 (:pad2-state state)))))
-         ))))
+         (update ::global-state (fn [state] (assoc state :pad2-action pad2 )))))))
+
 
 ;;===========
 ;; Functions
 ;;===========
+;;{
+;;Function that modify the position of the pad
+;;* `direction` of the movement (:up or :down)
+;;* {:pos :delta} the pad-state
+;;return the new pad-state if there is a update
+;;}
 (defn move-pad [direction {pos :pos delta :delta}]
   (if (not (= direction :nil))
     (let [op (case direction
                :up +
                :down -)]
-      {:pos (mapv op pos delta)
-       :delta delta})
-    {pos :pos delta :delta}))
+      (update-pad-state {:pos (mapv op pos delta) :delta delta}))
+    {:pos pos :delta delta}))
 
+;;{
+;;Function that modify the speed of the ball in 
+;;collision event
+;;* `side` of the collision (:right, :left)
+;;* `part of the object ( :top, :middle, :bottom)
+;;* {:pos :delta} the ball-state
+;;return the new  ball-state if there is a update
+;;}
 (defn modif-ball [side part {pos :pos delta :delta}]
   (let [x (case side
             :right (- (Math/abs (get delta 0)))
@@ -193,24 +238,36 @@
 
 (def pos-check (bounds-checker (- 8) 8 (+ 1.4 (* 100 (- MAX-Y))) (- (* 100 MAX-Y) 1.4)))
 
-
+;;{
+;;Function that update the ball-state
+;;(movement in general)
+;;}
 (defn update-ball-state [{pos :pos [dx dy dz] :delta}]
   (let [checks (pos-check pos)]
     (if (empty? checks)
-      {:pos (mapv + pos [dx dy dz])
-       :delta [dx dy dz]}
+      [:nil, {:pos (mapv + pos [dx dy dz]) :delta [dx dy dz]}]
       (if (inter? #{:underflow-wall :overflow-wall} checks)
         (let [delta' [dx (- dy) dz]]
-          {:pos (mapv + pos delta')
-           :delta delta'})
+          [:nil {:pos (mapv + pos delta') :delta delta'}])
         (if (inter? #{:score-left :error} checks)
-          (:ball-state init-global-state)
-          (let [pos' (:pos (:ball-state init-global-state))
-                [dx' dy' dz'] (:delta (:ball-state init-global-state))
-                res {:pos pos' :delta [(- dx') dy' dz']}
-                _ (assoc init-global-state :ball-state res)]
-            res))))))
+          [:left, (:ball-state init-global-state)]
+          [:right, (:ball-state init-global-state)])))))
 
+;;{
+;;Function that update the pad-state
+;;and check the limitation of the
+;;position (up and down according
+;;to the norme of the game)
+;;}
+(defn update-pad-state
+  [{[x y z] :pos del :delta}]
+  (let [_ (do (print "pos : " x)
+              (print " " y)
+              (println " " z))]
+    (cond
+      (> y 1.8) {:pos [x 2 z] :delta del}
+      (< y (- 1.8)) {:pos [x (- 2) z] :delta del}
+      :else {:pos [x y z] :delta del})))
 
 ;;; =====================
 ;;; The view part
@@ -237,40 +294,77 @@
        :rot [0 0 0]
        :scale 1}
        [:item item
-        {:mesh :mesh/cuboid
-         :pos [0 0 0]
-         :rot [0 0 0]
+        (if (= id 1)
+        {:mesh {:filename "./resources/pongpad.obj"}
+         :pos [0.1 0 -0.1]
+         :rot [0 0 90]
          :mat :red
-         :scale 0.3}]
+         :scale 0.2}
+         {:mesh {:filename "./resources/pongpad.obj"}
+          :pos [-0.1 0 -0.1]
+          :rot [0 0 -90]
+          :mat :red
+          :scale 0.2})]
        [:hitbox htop
-        {:pos [0 0.6 0]
-         :scale 0.6
-         :length [1 1 1]}]
+        {:pos [0 0.4 0]
+         :scale 0.4
+         :length [0.4 1 1]
+         :is-visible false}]
        [:hitbox hmid
         {:pos [0 0 0]
-         :scale 0.6
-         :length [1 1 1]}]
+         :scale 0.4
+         :length [0.4 1 1]
+         :is-visible false}]
        [:hitbox hbot
-        {:pos [0 -0.6 0]
-         :scale 0.6
-         :length [1 1 1]}]])))
+        {:pos [0 -0.4 0]
+         :scale 0.4
+         :length [0.4 1 1]
+         :is-visible false}]])))
 
 (def the-pad1 (the-pad 1))
 (def the-pad2 (the-pad 2))
+
+(defn the-net
+    []
+        [:item :test/net {:mesh {:filename "./resources/net.obj"}
+            :pos [0 0 -6]
+            :rot [90 90 0]
+            :scale 1}]
+           )
+
+(defn the-score
+    []
+    [:group :test/scoredisplay
+        {:pos [0 0 0]
+          :rot [0 0 0]
+          :scale 1}
+        [:item :test/score      {:mesh {:filename "./resources/score.obj"}
+                                        :pos [-0.70 2 -5]
+                                        :rot [90 0 0]
+                                        :scale 0.6}]
+        [:item :test/scoreleft   {:mesh {:filename "./resources/n0.obj"}
+                                        :pos [-2.5 1.5 -5]
+                                        :rot [90 0 0]
+                                        :scale 1}]
+        [:item :test/scoreright     {:mesh {:filename "./resources/n0.obj"}
+                                        :pos [2.15 1.5 -5]
+                                        :rot [90 0 0]
+                                        :scale 1}]])
 
 (defn the-ball
   [state]
   [:group :test/ball {:pos @state
                       :rot [0 0 0]
                       :scale 1}
-   [:item :test/box {:mesh :mesh/box
+   [:item :test/box {:mesh {:filename "./resources/ball.obj"}
                      :pos [0 0 0]
-                     :rot [0 0 0]
+                     :rot [10 10 0]
                      :mat :yellow
-                     :scale 0.2}]
+                     :scale 0.1}]
    [:hitbox :test/ball-hitbox {:pos [0 0 0]
-                               :scale 0.4
-                               :length [1 1 1]}
+                               :scale 0.1
+                               :length [1 1 1]
+                               :is-visible false}
     [:test/pad-group-1 :test/pad-hitbox-top-1 #(react/dispatch [::ball-collision :right :top])]
     [:test/pad-group-1 :test/pad-hitbox-middle-1 #(react/dispatch [::ball-collision :right :middle])]
     [:test/pad-group-1 :test/pad-hitbox-bottom-1 #(react/dispatch [::ball-collision :right :bottom])]
@@ -278,19 +372,19 @@
     [:test/pad-group-2 :test/pad-hitbox-middle-2 #(react/dispatch [::ball-collision :left :middle])]
     [:test/pad-group-2 :test/pad-hitbox-bottom-2 #(react/dispatch [::ball-collision :left :bottom])]]])
 
-
-
 (defn scene []
   [:scene
    [:ambient {:color :white :i 0.7}]
-   [:sun {:color :red :i 1 :dir [-1 0 0]}]
-   [:light ::light {:color :yellow :pos [0.5 0 -4]}]
+   [:sun {:color :white :i 1 :dir [-1 0 0]}]
+   [:light ::light {:color :white :pos [0.5 0 -4]}]
    (let [pad1-pos (react/subscribe ::pad1-changed)]
      [the-pad1 pad1-pos])
    (let [pad2-pos (react/subscribe ::pad2-changed)]
      [the-pad2 pad2-pos])
    (let [ball-pos (react/subscribe ::ball-changed)]
-     [the-ball ball-pos])])
+     [the-ball ball-pos])
+   [the-net]
+   [the-score]])
 
 
 ;;; =====================

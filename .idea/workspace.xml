@@ -1,7 +1,43 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="f8187466-6075-4485-8ee5-4948cacf0c7b" name="Default Changelist" comment="" />
+    <list default="true" id="f8187466-6075-4485-8ee5-4948cacf0c7b" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/resources/colon.obj" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/resources/score.mtl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ball.mtl" beforeDir="false" afterPath="$PROJECT_DIR$/resources/ball.mtl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ball.obj" beforeDir="false" afterPath="$PROJECT_DIR$/resources/ball.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/net.mtl" beforeDir="false" afterPath="$PROJECT_DIR$/resources/net.mtl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/net.obj" beforeDir="false" afterPath="$PROJECT_DIR$/resources/net.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pong.mtl" beforeDir="false" afterPath="$PROJECT_DIR$/resources/colon.mtl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pong.obj" beforeDir="false" afterPath="$PROJECT_DIR$/resources/pong.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pongpad.mtl" beforeDir="false" afterPath="$PROJECT_DIR$/resources/pongpad.mtl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pongpad.obj" beforeDir="false" afterPath="$PROJECT_DIR$/resources/pongpad.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n0.mtl" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n0.mtl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n0.obj" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n0.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n1.mtl" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n1.mtl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n1.obj" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n1.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n2.mtl" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n2.mtl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n2.obj" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n2.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n3.mtl" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n3.mtl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n3.obj" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n3.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n4.mtl" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n4.mtl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n4.obj" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n4.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n5.mtl" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n5.mtl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n5.obj" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n5.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n6.mtl" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n6.mtl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n6.obj" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n6.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n7.mtl" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n7.mtl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n7.obj" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n7.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n8.mtl" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n8.mtl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n8.obj" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n8.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n9.mtl" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n9.mtl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/ressources/n9.obj" beforeDir="false" afterPath="$PROJECT_DIR$/resources/n9.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/score.mtl" beforeDir="false" afterPath="$PROJECT_DIR$/resources/pong.mtl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/score.obj" beforeDir="false" afterPath="$PROJECT_DIR$/resources/score.obj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/yo_pong/core.clj" beforeDir="false" afterPath="$PROJECT_DIR$/src/yo_pong/core.clj" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/yo_pong/pong.clj" beforeDir="false" afterPath="$PROJECT_DIR$/src/yo_pong/pong.clj" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -18,6 +54,16 @@
   </component>
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\pierr\Desktop\PSTL\thePong\ressources" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\pierr\Desktop\PSTL\thePong\ressources" />
+      <recent name="C:\Users\pierr\Desktop\PSTL\thePong" />
+    </key>
   </component>
   <component name="SvnConfiguration">
     <configuration />
@@ -30,6 +76,32 @@
       <option name="presentableId" value="Default" />
       <updated>1585331580734</updated>
     </task>
+    <task id="LOCAL-00001" summary="&quot;added obj for numbers, and some writing on the scene&quot;">
+      <created>1591268399401</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1591268399401</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="&quot;added obj for numbers, and some writing on the scene&quot;" />
+    <option name="LAST_COMMIT_MESSAGE" value="&quot;added obj for numbers, and some writing on the scene&quot;" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="614" y="114" key="CommitChangelistDialog2" timestamp="1591268398904">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="614" y="114" key="CommitChangelistDialog2/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1591268398904" />
+    <state x="740" y="275" key="FileChooserDialogImpl" timestamp="1591263234289">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="740" y="275" key="FileChooserDialogImpl/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1591263234289" />
+    <state x="769" y="437" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1591281407573">
+      <screen x="0" y="0" width="1920" height="1040" />
+    </state>
+    <state x="769" y="437" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/1920.0.1920.1040/0.0.1920.1040@0.0.1920.1040" timestamp="1591281407573" />
   </component>
 </project>
